@@ -1,0 +1,12 @@
+/.build-src/
+/.wasm-deps/
+/build-wasm*/
+/dist/
+/demo/test-font.ttf
+/tests/assets/
+/.playwright-cli/
+/CMakeFiles/
+/output/
+/node_modules/
+/vite-dist/
+msdf-atlas-gen

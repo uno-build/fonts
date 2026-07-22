@@ -1,0 +1,16 @@
+:root { color-scheme: dark; font-family: Inter, system-ui, sans-serif; background: #101217; color: #edf1f7 }
+body { margin: 0; background: radial-gradient(circle at 20% 0, #24314a, #101217 42rem) }
+main { max-width: 1100px; margin: auto; padding: 2rem }
+h1 { font-size: clamp(2rem, 5vw, 3.5rem); margin-bottom: .4rem }
+.controls { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 1rem; padding: 1.2rem; border: 1px solid #3b465c; border-radius: 12px; background: #171b24cc }
+.controls label:first-child, .controls label:nth-child(2) { grid-column: span 2 }
+label { display: grid; gap: .45rem; color: #aebad0 }
+input, textarea, select, button { box-sizing: border-box; width: 100%; padding: .7rem; color: inherit; background: #0e1118; border: 1px solid #4b5870; border-radius: 7px }
+button { align-self: end; background: #5d6cff; border-color: #7380ff; cursor: pointer; font-weight: 700 }
+#status { min-height: 1.5rem; color: #8ce6b1 }
+.output { display: grid; grid-template-columns: 1fr; gap: 1rem }
+.output > div { overflow: auto; padding: 1rem; background: #0b0e14; border-radius: 10px }
+#atlas { max-width: 100%; image-rendering: pixelated; background: repeating-conic-gradient(#20242c 0 25%, #151920 0 50%) 50% / 16px 16px }
+#preview { width: 100%; background: #090b10 }
+pre { max-height: 32rem; overflow: auto; padding: 1rem; background: #090b10; border-radius: 10px; white-space: pre-wrap }
+@media (max-width: 700px) { .controls { grid-template-columns: 1fr 1fr } .controls label:first-child, .controls label:nth-child(2) { grid-column: span 2 } }

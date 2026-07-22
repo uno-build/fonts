@@ -1,0 +1,36 @@
+{
+  "fixture": {
+    "charset": "AVToWaéΩ",
+    "size": 32,
+    "pxRange": 4,
+    "yOrigin": "top",
+    "coloringStrategy": "inktrap"
+  },
+  "wasm": {
+    "width": 84,
+    "height": 84,
+    "glyphs": [65, 84, 86, 87, 97, 111, 233, 937]
+  },
+  "native": {
+    "width": 84,
+    "height": 84,
+    "glyphs": [65, 84, 86, 87, 97, 111, 233, 937]
+  },
+  "metricAbsoluteDifference": {
+    "emSize": 0,
+    "lineHeight": 0,
+    "ascender": 0,
+    "descender": 0,
+    "underlineY": 0,
+    "underlineThickness": 0
+  },
+  "decodedRgbaComparison": {
+    "components": 28224,
+    "changedComponents": 0,
+    "maximumAbsoluteDifference": 0
+  },
+  "notes": [
+    "Both binaries use msdf-atlas-gen 6148900 and Skia a004a270.",
+    "The wasm build uses Emscripten's FreeType 2.6.0 port; the native reference uses FreeType 2.13.3 because 2.6.0 does not compile with the macOS 26 SDK."
+  ]
+}

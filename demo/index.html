@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link rel="icon" href="data:,">
+  <title>msdf-atlas-gen WebAssembly</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main>
+    <h1>msdf-atlas-gen · WebAssembly</h1>
+    <p>La fuente se procesa íntegramente dentro de un Web Worker. No se sube a ningún servidor.</p>
+    <section class="controls">
+      <label>Fuente TTF/OTF <input id="font" type="file" accept=".ttf,.otf,font/ttf,font/otf"></label>
+      <label>Charset <textarea id="charset" rows="3">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789 ÁÉÍÓÚáéíóúñÑΩ¿?.,:;!()-</textarea></label>
+      <label>Tamaño <input id="size" type="number" min="4" max="256" value="42"></label>
+      <label>Rango px <input id="range" type="number" min="1" max="32" step="0.5" value="4"></label>
+      <label>Tipo <select id="type"><option>hardmask</option><option>softmask</option><option>sdf</option><option>psdf</option><option selected>msdf</option><option>mtsdf</option></select></label>
+      <label>Origen Y <select id="origin"><option value="bottom">bottom</option><option value="top">top</option></select></label>
+      <button id="generate" type="button">Generar atlas</button>
+    </section>
+    <p id="status" role="status">Selecciona una fuente.</p>
+    <section class="output">
+      <div><h2>PNG</h2><img id="atlas" alt="Atlas de fuente generado"></div>
+      <div><h2>Frase renderizada con WebGL</h2><canvas id="preview" width="900" height="180"></canvas></div>
+    </section>
+    <h2>Metadata</h2>
+    <pre id="metadata"></pre>
+  </main>
+  <script type="module" src="./main.js"></script>
+</body>
+</html>

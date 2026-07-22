@@ -1,0 +1,217 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -8,7 +8,9 @@ option(MSDF_ATLAS_USE_SKIA "Build with the Skia library" ON)
+ option(MSDF_ATLAS_NO_ARTERY_FONT "Disable Artery Font export and do not require its submodule" OFF)
+ option(MSDF_ATLAS_MSDFGEN_EXTERNAL "Do not build the msdfgen submodule but find it as an external package" OFF)
+ option(MSDF_ATLAS_INSTALL "Generate installation target" OFF)
+ option(MSDF_ATLAS_DYNAMIC_RUNTIME "Link dynamic runtime library instead of static" OFF)
++option(MSDF_ATLAS_ENABLE_THREADS "Enable parallel atlas generation with std::thread" ON)
++option(MSDF_ATLAS_BUILD_WASM "Build the in-memory WebAssembly C API" OFF)
+ option(BUILD_SHARED_LIBS "Generate dynamic library files instead of static" OFF)
+ 
+ if(NOT MSDF_ATLAS_MSDFGEN_EXTERNAL)
+@@ -79,6 +81,43 @@ endif()
+ # Version is specified in vcpkg.json
+ project(msdf-atlas-gen VERSION ${MSDF_ATLAS_VERSION} LANGUAGES CXX)
+ 
++if(MSDF_ATLAS_USE_SKIA AND MSDF_ATLAS_SKIA_ROOT AND NOT TARGET skia)
++    add_library(skia STATIC IMPORTED GLOBAL)
++    set_target_properties(skia PROPERTIES
++        IMPORTED_LOCATION "${MSDF_ATLAS_SKIA_ROOT}/lib/libskia.a"
++        INTERFACE_INCLUDE_DIRECTORIES "${MSDF_ATLAS_SKIA_ROOT}/include"
++    )
++endif()
++
++if(EMSCRIPTEN)
++    set(MSDFGEN_DISABLE_VARIABLE_FONTS ON CACHE BOOL "Disable variable-font APIs unavailable in the Emscripten FreeType port" FORCE)
++    if(NOT TARGET Freetype::Freetype)
++        add_library(msdf-wasm-freetype INTERFACE)
++        add_library(Freetype::Freetype ALIAS msdf-wasm-freetype)
++        target_compile_options(msdf-wasm-freetype INTERFACE "SHELL:-s USE_FREETYPE=1")
++        target_link_options(msdf-wasm-freetype INTERFACE "SHELL:-s USE_FREETYPE=1")
++    endif()
++    if(NOT TARGET ZLIB::ZLIB)
++        add_library(msdf-wasm-zlib INTERFACE)
++        add_library(ZLIB::ZLIB ALIAS msdf-wasm-zlib)
++        target_compile_options(msdf-wasm-zlib INTERFACE "SHELL:-s USE_ZLIB=1")
++        target_link_options(msdf-wasm-zlib INTERFACE "SHELL:-s USE_ZLIB=1")
++    endif()
++    if(NOT TARGET PNG::PNG)
++        add_library(msdf-wasm-png INTERFACE)
++        add_library(PNG::PNG ALIAS msdf-wasm-png)
++        target_compile_options(msdf-wasm-png INTERFACE "SHELL:-s USE_LIBPNG=1")
++        target_link_options(msdf-wasm-png INTERFACE "SHELL:-s USE_LIBPNG=1")
++        target_link_libraries(msdf-wasm-png INTERFACE ZLIB::ZLIB)
++    endif()
++    if(MSDF_ATLAS_USE_SKIA AND NOT TARGET skia)
++        if(NOT MSDF_ATLAS_SKIA_ROOT)
++            message(FATAL_ERROR "Set MSDF_ATLAS_SKIA_ROOT to the wasm Skia installation")
++        endif()
++        message(FATAL_ERROR "The configured Skia target could not be created")
++    endif()
++endif()
++
+ if(MSDF_ATLAS_MSDFGEN_EXTERNAL)
+     if(NOT TARGET msdfgen::msdfgen)
+         find_package(msdfgen REQUIRED)
+@@ -87,7 +126,9 @@ if(MSDF_ATLAS_MSDFGEN_EXTERNAL)
+ else()
+     add_subdirectory(msdfgen)
+ endif()
+-find_package(Threads REQUIRED)
++if(MSDF_ATLAS_ENABLE_THREADS)
++    find_package(Threads REQUIRED)
++endif()
+ if(NOT MSDFGEN_DISABLE_PNG AND NOT TARGET PNG::PNG)
+     find_package(PNG REQUIRED)
+ endif()
+@@ -119,10 +160,52 @@ endif()
+ set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT msdf-atlas-gen)
+ 
+ target_compile_features(msdf-atlas-gen PUBLIC cxx_std_11)
+-target_link_libraries(msdf-atlas-gen PRIVATE Threads::Threads)
++if(MSDF_ATLAS_ENABLE_THREADS)
++    target_compile_definitions(msdf-atlas-gen PUBLIC MSDF_ATLAS_ENABLE_THREADS=1)
++    target_link_libraries(msdf-atlas-gen PRIVATE Threads::Threads)
++else()
++    target_compile_definitions(msdf-atlas-gen PUBLIC MSDF_ATLAS_ENABLE_THREADS=0)
++endif()
+ if(NOT MSDFGEN_DISABLE_PNG)
+     target_link_libraries(msdf-atlas-gen PRIVATE PNG::PNG)
+ endif()
++
++if(MSDF_ATLAS_BUILD_WASM)
++    if(NOT EMSCRIPTEN)
++        message(FATAL_ERROR "MSDF_ATLAS_BUILD_WASM requires the Emscripten toolchain")
++    endif()
++    if(MSDF_ATLAS_ENABLE_THREADS)
++        message(FATAL_ERROR "The WebAssembly API must be built with MSDF_ATLAS_ENABLE_THREADS=OFF")
++    endif()
++    add_executable(msdf-atlas-wasm wasm/msdf-atlas-wasm.cpp)
++    target_link_libraries(msdf-atlas-wasm PRIVATE
++        msdf-atlas-gen::msdf-atlas-gen
++        Freetype::Freetype
++        PNG::PNG
++        ZLIB::ZLIB
++    )
++    target_compile_features(msdf-atlas-wasm PRIVATE cxx_std_17)
++    target_compile_options(msdf-atlas-wasm PRIVATE -O2 -fexceptions)
++    target_link_options(msdf-atlas-wasm PRIVATE
++        -O2
++        -fexceptions
++        "SHELL:-s MODULARIZE=1"
++        "SHELL:-s EXPORT_ES6=1"
++        "SHELL:-s EXPORT_NAME=createMsdfAtlasModule"
++        "SHELL:-s ENVIRONMENT=web,worker"
++        "SHELL:-s ALLOW_MEMORY_GROWTH=1"
++        "SHELL:-s FILESYSTEM=0"
++        "SHELL:-s NO_EXIT_RUNTIME=1"
++        "SHELL:-s MALLOC=emmalloc"
++        "SHELL:-s EXPORTED_FUNCTIONS=['_malloc','_free','_msdf_generate_atlas','_msdf_result_png_data','_msdf_result_png_size','_msdf_result_metadata_json','_msdf_result_error','_msdf_result_width','_msdf_result_height','_msdf_destroy_result','_msdf_get_font_charset','_msdf_font_charset_data','_msdf_font_charset_size','_msdf_font_charset_error','_msdf_destroy_font_charset_result']"
++        "SHELL:-s EXPORTED_RUNTIME_METHODS=['UTF8ToString']"
++    )
++    set_target_properties(msdf-atlas-wasm PROPERTIES
++        OUTPUT_NAME msdf-atlas
++        SUFFIX ".js"
++        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/dist"
++    )
++endif()
+ target_link_libraries(msdf-atlas-gen PUBLIC msdfgen::msdfgen)
+ 
+ if(BUILD_SHARED_LIBS AND WIN32)
+diff --git a/msdf-atlas-gen/ImmediateAtlasGenerator.hpp b/msdf-atlas-gen/ImmediateAtlasGenerator.hpp
+--- a/msdf-atlas-gen/ImmediateAtlasGenerator.hpp
++++ b/msdf-atlas-gen/ImmediateAtlasGenerator.hpp
+@@ -70,7 +70,12 @@ void ImmediateAtlasGenerator<T, N, GEN_FN, AtlasStorage>::setAttributes(const Ge
+ 
+ template <typename T, int N, GeneratorFunction<T, N> GEN_FN, class AtlasStorage>
+ void ImmediateAtlasGenerator<T, N, GEN_FN, AtlasStorage>::setThreadCount(int threadCount) {
++#if MSDF_ATLAS_ENABLE_THREADS
+     this->threadCount = threadCount;
++#else
++    (void) threadCount;
++    this->threadCount = 1;
++#endif
+ }
+ 
+ template <typename T, int N, GeneratorFunction<T, N> GEN_FN, class AtlasStorage>
+diff --git a/msdf-atlas-gen/Workload.cpp b/msdf-atlas-gen/Workload.cpp
+--- a/msdf-atlas-gen/Workload.cpp
++++ b/msdf-atlas-gen/Workload.cpp
+@@ -1,10 +1,12 @@
+ 
+ #include "Workload.h"
+ 
++#include <algorithm>
++#if MSDF_ATLAS_ENABLE_THREADS
+ #include <vector>
+ #include <thread>
+ #include <atomic>
+-#include <algorithm>
++#endif
+ 
+ namespace msdf_atlas {
+ 
+@@ -20,6 +22,7 @@ bool Workload::finishSequential() {
+ }
+ 
+ bool Workload::finishParallel(int threadCount) {
++#if MSDF_ATLAS_ENABLE_THREADS
+     std::atomic<bool> result(true);
+     std::atomic<int> next(0);
+     std::function<void(int)> threadWorker = [this, &result, &next](int threadNo) {
+@@ -35,16 +38,25 @@ bool Workload::finishParallel(int threadCount) {
+     for (std::thread &thread : threads)
+         thread.join();
+     return result;
++#else
++    (void) threadCount;
++    return finishSequential();
++#endif
+ }
+ 
+ bool Workload::finish(int threadCount) {
+     if (!chunks)
+         return true;
++    #if !MSDF_ATLAS_ENABLE_THREADS
++    (void) threadCount;
++    return finishSequential();
++    #else
+     if (threadCount == 1 || chunks == 1)
+         return finishSequential();
+     if (threadCount > 1)
+         return finishParallel(std::min(threadCount, chunks));
+     return false;
++    #endif
+ }
+ 
+ }
+diff --git a/msdfgen/CMakeLists.txt b/msdfgen/CMakeLists.txt
+--- a/msdfgen/CMakeLists.txt
++++ b/msdfgen/CMakeLists.txt
+@@ -178,9 +178,6 @@ if(NOT MSDFGEN_CORE_ONLY)
+ 
+     if(MSDFGEN_USE_SKIA)
+         set(MSDFGEN_SKIA_LIB skia)
+-        set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
+-        set(THREADS_PREFER_PTHREAD_FLAG TRUE)
+-        find_package(Threads REQUIRED)
+         if(NOT TARGET skia)
+             if(MSDFGEN_USE_VCPKG)
+                 find_package(unofficial-skia REQUIRED)
+@@ -191,7 +188,13 @@ if(NOT MSDFGEN_CORE_ONLY)
+         endif()
+         target_compile_features(msdfgen-ext PUBLIC cxx_std_17)
+         target_compile_definitions(msdfgen-ext PUBLIC MSDFGEN_USE_SKIA)
+-        target_link_libraries(msdfgen-ext PRIVATE Threads::Threads ${MSDFGEN_SKIA_LIB})
++        target_link_libraries(msdfgen-ext PRIVATE ${MSDFGEN_SKIA_LIB})
++        if(NOT DEFINED MSDF_ATLAS_ENABLE_THREADS OR MSDF_ATLAS_ENABLE_THREADS)
++            set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
++            set(THREADS_PREFER_PTHREAD_FLAG TRUE)
++            find_package(Threads REQUIRED)
++            target_link_libraries(msdfgen-ext PRIVATE Threads::Threads)
++        endif()
+     endif()
+ 
+     if(BUILD_SHARED_LIBS AND WIN32)

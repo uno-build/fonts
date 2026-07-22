@@ -1,0 +1,14 @@
+{
+  "name": "msdf-atlas-wasm-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build:demo": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^8.1.4"
+  }
+}
