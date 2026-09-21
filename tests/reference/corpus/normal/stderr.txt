@@ -1,0 +1,3 @@
+Atlas image file saved.
+Artery Font file generated.
+Glyph layout and metadata written into JSON file.

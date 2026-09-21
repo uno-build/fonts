@@ -1,0 +1,1 @@
+Invalid atlas type. Valid types are: hardmask, softmask, sdf, psdf, msdf, mtsdf

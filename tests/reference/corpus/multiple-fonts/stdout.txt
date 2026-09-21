@@ -1,0 +1,3 @@
+Loaded geometry of 3 out of 3 glyphs from font "fixtures/Lato-Regular.ttf".
+Loaded geometry of 3 out of 3 glyphs from font "fixtures/Lato-Bold.ttf".
+Atlas dimensions: 64 x 64

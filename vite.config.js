@@ -19,19 +19,19 @@ export default defineConfig({
     host: "127.0.0.1",
     port: 4173,
     strictPort: true,
-    open: "/demo/",
+    open: "/playground/",
   },
   preview: {
     host: "127.0.0.1",
     port: 4173,
     strictPort: true,
-    open: "/demo/",
+    open: "/playground/",
   },
   build: {
     outDir: "vite-dist",
     emptyOutDir: true,
     rollupOptions: {
-      input: fileURLToPath(new URL("./demo/index.html", import.meta.url)),
+      input: fileURLToPath(new URL("./playground/index.html", import.meta.url)),
     },
   },
 });

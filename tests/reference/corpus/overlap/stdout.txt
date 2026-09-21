@@ -1,0 +1,2 @@
+Loaded geometry of 4 out of 4 glyphs.
+Atlas dimensions: 72 x 72

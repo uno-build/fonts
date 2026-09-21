@@ -11,7 +11,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  option(BUILD_SHARED_LIBS "Generate dynamic library files instead of static" OFF)
  
  if(NOT MSDF_ATLAS_MSDFGEN_EXTERNAL)
-@@ -79,6 +81,43 @@ endif()
+@@ -79,6 +81,64 @@ endif()
  # Version is specified in vcpkg.json
  project(msdf-atlas-gen VERSION ${MSDF_ATLAS_VERSION} LANGUAGES CXX)
  
@@ -24,25 +24,46 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 +endif()
 +
 +if(EMSCRIPTEN)
-+    set(MSDFGEN_DISABLE_VARIABLE_FONTS ON CACHE BOOL "Disable variable-font APIs unavailable in the Emscripten FreeType port" FORCE)
++    set(MSDF_ATLAS_WASM_DEPS_ROOT "" CACHE PATH "Prefix containing the pinned wasm FreeType, libpng, and zlib builds")
++    if(NOT MSDF_ATLAS_WASM_DEPS_ROOT)
++        message(FATAL_ERROR "Set MSDF_ATLAS_WASM_DEPS_ROOT to the pinned wasm dependency installation")
++    endif()
++    foreach(REQUIRED_FILE
++        "${MSDF_ATLAS_WASM_DEPS_ROOT}/lib/libfreetype.a"
++        "${MSDF_ATLAS_WASM_DEPS_ROOT}/lib/libpng16.a"
++        "${MSDF_ATLAS_WASM_DEPS_ROOT}/lib/libz.a"
++        "${MSDF_ATLAS_WASM_DEPS_ROOT}/include/freetype2/ft2build.h"
++        "${MSDF_ATLAS_WASM_DEPS_ROOT}/include/png.h"
++        "${MSDF_ATLAS_WASM_DEPS_ROOT}/include/zlib.h"
++    )
++        if(NOT EXISTS "${REQUIRED_FILE}")
++            message(FATAL_ERROR "Missing pinned wasm dependency: ${REQUIRED_FILE}")
++        endif()
++    endforeach()
 +    if(NOT TARGET Freetype::Freetype)
-+        add_library(msdf-wasm-freetype INTERFACE)
++        add_library(msdf-wasm-freetype STATIC IMPORTED GLOBAL)
 +        add_library(Freetype::Freetype ALIAS msdf-wasm-freetype)
-+        target_compile_options(msdf-wasm-freetype INTERFACE "SHELL:-s USE_FREETYPE=1")
-+        target_link_options(msdf-wasm-freetype INTERFACE "SHELL:-s USE_FREETYPE=1")
++        set_target_properties(msdf-wasm-freetype PROPERTIES
++            IMPORTED_LOCATION "${MSDF_ATLAS_WASM_DEPS_ROOT}/lib/libfreetype.a"
++            INTERFACE_INCLUDE_DIRECTORIES "${MSDF_ATLAS_WASM_DEPS_ROOT}/include/freetype2"
++        )
 +    endif()
 +    if(NOT TARGET ZLIB::ZLIB)
-+        add_library(msdf-wasm-zlib INTERFACE)
++        add_library(msdf-wasm-zlib STATIC IMPORTED GLOBAL)
 +        add_library(ZLIB::ZLIB ALIAS msdf-wasm-zlib)
-+        target_compile_options(msdf-wasm-zlib INTERFACE "SHELL:-s USE_ZLIB=1")
-+        target_link_options(msdf-wasm-zlib INTERFACE "SHELL:-s USE_ZLIB=1")
++        set_target_properties(msdf-wasm-zlib PROPERTIES
++            IMPORTED_LOCATION "${MSDF_ATLAS_WASM_DEPS_ROOT}/lib/libz.a"
++            INTERFACE_INCLUDE_DIRECTORIES "${MSDF_ATLAS_WASM_DEPS_ROOT}/include"
++        )
 +    endif()
 +    if(NOT TARGET PNG::PNG)
-+        add_library(msdf-wasm-png INTERFACE)
++        add_library(msdf-wasm-png STATIC IMPORTED GLOBAL)
 +        add_library(PNG::PNG ALIAS msdf-wasm-png)
-+        target_compile_options(msdf-wasm-png INTERFACE "SHELL:-s USE_LIBPNG=1")
-+        target_link_options(msdf-wasm-png INTERFACE "SHELL:-s USE_LIBPNG=1")
-+        target_link_libraries(msdf-wasm-png INTERFACE ZLIB::ZLIB)
++        set_target_properties(msdf-wasm-png PROPERTIES
++            IMPORTED_LOCATION "${MSDF_ATLAS_WASM_DEPS_ROOT}/lib/libpng16.a"
++            INTERFACE_INCLUDE_DIRECTORIES "${MSDF_ATLAS_WASM_DEPS_ROOT}/include"
++            INTERFACE_LINK_LIBRARIES ZLIB::ZLIB
++        )
 +    endif()
 +    if(MSDF_ATLAS_USE_SKIA AND NOT TARGET skia)
 +        if(NOT MSDF_ATLAS_SKIA_ROOT)
@@ -55,7 +76,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  if(MSDF_ATLAS_MSDFGEN_EXTERNAL)
      if(NOT TARGET msdfgen::msdfgen)
          find_package(msdfgen REQUIRED)
-@@ -87,7 +126,9 @@ if(MSDF_ATLAS_MSDFGEN_EXTERNAL)
+@@ -87,7 +147,9 @@ if(MSDF_ATLAS_MSDFGEN_EXTERNAL)
  else()
      add_subdirectory(msdfgen)
  endif()
@@ -66,7 +87,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
  if(NOT MSDFGEN_DISABLE_PNG AND NOT TARGET PNG::PNG)
      find_package(PNG REQUIRED)
  endif()
-@@ -119,10 +160,52 @@ endif()
+@@ -119,10 +181,61 @@ endif()
  set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT msdf-atlas-gen)
  
  target_compile_features(msdf-atlas-gen PUBLIC cxx_std_11)
@@ -88,7 +109,14 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 +    if(MSDF_ATLAS_ENABLE_THREADS)
 +        message(FATAL_ERROR "The WebAssembly API must be built with MSDF_ATLAS_ENABLE_THREADS=OFF")
 +    endif()
-+    add_executable(msdf-atlas-wasm wasm/msdf-atlas-wasm.cpp)
++    add_executable(msdf-atlas-wasm
++        wasm/msdf-atlas-wasm.cpp
++        msdf-atlas-gen/main.cpp
++    )
++    target_compile_definitions(msdf-atlas-wasm PRIVATE
++        MSDF_ATLAS_STANDALONE
++        MSDF_ATLAS_VERSION_UNDERLINE=${MSDF_ATLAS_VERSION_UNDERLINE}
++    )
 +    target_link_libraries(msdf-atlas-wasm PRIVATE
 +        msdf-atlas-gen::msdf-atlas-gen
 +        Freetype::Freetype
@@ -103,13 +131,15 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 +        "SHELL:-s MODULARIZE=1"
 +        "SHELL:-s EXPORT_ES6=1"
 +        "SHELL:-s EXPORT_NAME=createMsdfAtlasModule"
-+        "SHELL:-s ENVIRONMENT=web,worker"
++        "SHELL:-s ENVIRONMENT=web,worker,node"
 +        "SHELL:-s ALLOW_MEMORY_GROWTH=1"
-+        "SHELL:-s FILESYSTEM=0"
++        "SHELL:-s FORCE_FILESYSTEM=1"
++        "SHELL:-s INVOKE_RUN=0"
 +        "SHELL:-s NO_EXIT_RUNTIME=1"
 +        "SHELL:-s MALLOC=emmalloc"
-+        "SHELL:-s EXPORTED_FUNCTIONS=['_malloc','_free','_msdf_generate_atlas','_msdf_result_png_data','_msdf_result_png_size','_msdf_result_metadata_json','_msdf_result_error','_msdf_result_width','_msdf_result_height','_msdf_destroy_result','_msdf_get_font_charset','_msdf_font_charset_data','_msdf_font_charset_size','_msdf_font_charset_error','_msdf_destroy_font_charset_result']"
-+        "SHELL:-s EXPORTED_RUNTIME_METHODS=['UTF8ToString']"
++        "SHELL:-lnodefs.js"
++        "SHELL:-s EXPORTED_FUNCTIONS=['_main','_malloc','_free','_msdf_generate_atlas','_msdf_result_png_data','_msdf_result_png_size','_msdf_result_metadata_json','_msdf_result_error','_msdf_result_width','_msdf_result_height','_msdf_destroy_result','_msdf_get_font_charset','_msdf_font_charset_data','_msdf_font_charset_size','_msdf_font_charset_error','_msdf_destroy_font_charset_result']"
++        "SHELL:-s EXPORTED_RUNTIME_METHODS=['UTF8ToString','callMain','FS','NODEFS']"
 +    )
 +    set_target_properties(msdf-atlas-wasm PROPERTIES
 +        OUTPUT_NAME msdf-atlas

@@ -1,14 +1,26 @@
 {
-  "name": "msdf-atlas-wasm-demo",
+  "name": "@uno/fonts",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build:demo": "vite build",
-    "preview": "vite preview"
+    "build:playground": "vite build",
+    "preview": "vite preview",
+    "build:reference": "bash scripts/build-native-reference.sh",
+    "build:api": "tsc -p tsconfig.json && cp src/msdf-atlas.worker.js dist/msdf-atlas.worker.js",
+    "build:wasm": "bash scripts/build-wasm-deps.sh && bash scripts/build-wasm.sh",
+    "test": "npm run test:reference && npm run test:wasm && npm run test:node && npm run test:browser",
+    "test:reference": "node tests/reference/corpus.mjs --verify",
+    "test:wasm": "node tests/check-wasm.mjs",
+    "test:node": "node tests/check-universal-module.mjs",
+    "test:browser:prepare": "bash tests/run-browser-tests.sh",
+    "test:browser": "npm run test:browser:prepare && node tests/run-browser-tests.mjs",
+    "reference:update": "node tests/reference/corpus.mjs"
   },
   "devDependencies": {
+    "playwright": "1.63.0",
+    "typescript": "5.9.3",
     "vite": "^8.1.4"
   }
 }

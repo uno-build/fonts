@@ -1,0 +1,2 @@
+Loaded geometry of 6 out of 6 glyphs.
+Atlas dimensions: 76 x 76

@@ -1,0 +1,3 @@
+Available font variation axes:
+	[wght] "Weight" (100 to 900), default = 400
+	[wdth] "Width" (75 to 100), default = 100

@@ -1,0 +1,2 @@
+Atlas image file saved.
+Glyph layout and metadata written into JSON file.

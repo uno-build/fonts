@@ -2,7 +2,7 @@
 /.wasm-deps/
 /build-wasm*/
 /dist/
-/demo/test-font.ttf
+/playground/test-font.ttf
 /tests/assets/
 /.playwright-cli/
 /CMakeFiles/

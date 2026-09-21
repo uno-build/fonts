@@ -1,0 +1,1 @@
+Glyph layout and metadata written into JSON file.
