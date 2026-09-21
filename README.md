@@ -23,6 +23,16 @@ copy instead.
 | `npm run test:reference` | Runs the reference CLI and compares its results with the saved corpus. |
 | `npm run test:wasm` | Inspects the WASM exports and verifies that it has no pthread imports or imported memory. |
 | `npm run test:node` | Runs the WASM in Node and checks initialization, filesystem support, variable fonts, and the official exporters. |
+| `npm run test:cli` | Compares the local Node/WASM CLI's exit codes and streams with the C++ reference, and checks host filesystem access. |
 | `npm run test:browser:prepare` | Prepares browser test fonts in `tests/assets`. Uses system fonts on macOS or the paths specified by `MSDF_TEST_TTF`, `MSDF_TEST_OTF`, and `MSDF_TEST_COMPLEX_TTF`. |
 | `npm run test:browser` | Prepares the fonts, starts a local server, runs the test harness in Chromium, and closes the browser and server when finished. Requires Chromium installed with `npx playwright install chromium`. |
 | `npm run reference:update` | Regenerates the expected results corpus using the reference CLI. Modifies the corpus files and is not run as part of `npm test`. |
+
+After building the WASM module, run the local CLI with the same arguments as
+the official executable:
+
+```sh
+node cli/msdf-atlas-gen.mjs -font path/to/font.ttf -imageout atlas.png
+```
+
+It is also exposed as the package-local `msdf-atlas-gen` binary.

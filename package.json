@@ -3,17 +3,22 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "msdf-atlas-gen": "cli/msdf-atlas-gen.mjs"
+  },
   "scripts": {
+    "generate": "node cli/msdf-atlas-gen.mjs -type mtsdf -font /Users/enzo/projects/uno/ui/examples/assets/fonts/ChangaOne-Regular.ttf -json /Users/enzo/projects/uno/ui/examples/assets/fonts/ChangaOne-Regular.mtsdf.json -imageout /Users/enzo/projects/uno/ui/examples/assets/fonts/ChangaOne-Regular.mtsdf.png -size 128 -pxrange 8",
     "dev": "vite",
     "build:playground": "vite build",
     "preview": "vite preview",
     "build:reference": "bash scripts/build-native-reference.sh",
     "build:api": "tsc -p tsconfig.json && cp src/msdf-atlas.worker.js dist/msdf-atlas.worker.js",
     "build:wasm": "bash scripts/build-wasm-deps.sh && bash scripts/build-wasm.sh",
-    "test": "npm run test:reference && npm run test:wasm && npm run test:node && npm run test:browser",
+    "test": "npm run test:reference && npm run test:wasm && npm run test:node && npm run test:cli && npm run test:browser",
     "test:reference": "node tests/reference/corpus.mjs --verify",
     "test:wasm": "node tests/check-wasm.mjs",
     "test:node": "node tests/check-universal-module.mjs",
+    "test:cli": "node tests/check-cli.mjs",
     "test:browser:prepare": "bash tests/run-browser-tests.sh",
     "test:browser": "npm run test:browser:prepare && node tests/run-browser-tests.mjs",
     "reference:update": "node tests/reference/corpus.mjs"
