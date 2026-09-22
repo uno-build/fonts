@@ -21,6 +21,7 @@ void msdf_destroy_result(AtlasResultHandle *result);
 
 FontCharsetResultHandle *msdf_get_font_charset(const uint8_t *font_data, size_t font_size);
 const uint32_t *msdf_font_charset_data(const FontCharsetResultHandle *result);
+const uint32_t *msdf_font_charset_glyph_indices(const FontCharsetResultHandle *result);
 size_t msdf_font_charset_size(const FontCharsetResultHandle *result);
 const char *msdf_font_charset_error(const FontCharsetResultHandle *result);
 void msdf_destroy_font_charset_result(FontCharsetResultHandle *result);

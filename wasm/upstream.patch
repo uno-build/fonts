@@ -138,7 +138,7 @@ diff --git a/CMakeLists.txt b/CMakeLists.txt
 +        "SHELL:-s NO_EXIT_RUNTIME=1"
 +        "SHELL:-s MALLOC=emmalloc"
 +        "SHELL:-lnodefs.js"
-+        "SHELL:-s EXPORTED_FUNCTIONS=['_main','_malloc','_free','_msdf_generate_atlas','_msdf_result_png_data','_msdf_result_png_size','_msdf_result_metadata_json','_msdf_result_error','_msdf_result_width','_msdf_result_height','_msdf_destroy_result','_msdf_get_font_charset','_msdf_font_charset_data','_msdf_font_charset_size','_msdf_font_charset_error','_msdf_destroy_font_charset_result']"
++        "SHELL:-s EXPORTED_FUNCTIONS=['_main','_malloc','_free','_msdf_generate_atlas','_msdf_result_png_data','_msdf_result_png_size','_msdf_result_metadata_json','_msdf_result_error','_msdf_result_width','_msdf_result_height','_msdf_destroy_result','_msdf_get_font_charset','_msdf_font_charset_data','_msdf_font_charset_glyph_indices','_msdf_font_charset_size','_msdf_font_charset_error','_msdf_destroy_font_charset_result']"
 +        "SHELL:-s EXPORTED_RUNTIME_METHODS=['UTF8ToString','callMain','FS','NODEFS']"
 +    )
 +    set_target_properties(msdf-atlas-wasm PROPERTIES

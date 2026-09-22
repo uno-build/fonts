@@ -9,7 +9,7 @@ const pthread = imports.filter(({ module, name }) => /pthread|thread|wasi_thread
 if (pthread.length) throw new Error(`pthread imports found: ${JSON.stringify(pthread)}`);
 const memory = imports.find(({ kind }) => kind === "memory");
 if (memory) throw new Error(`unexpected imported memory: ${memory.module}.${memory.name}`);
-for (const name of ["__main_argc_argv", "malloc", "free", "msdf_generate_atlas", "msdf_get_font_charset"]) {
+for (const name of ["__main_argc_argv", "malloc", "free", "msdf_generate_atlas", "msdf_get_font_charset", "msdf_font_charset_glyph_indices"]) {
   if (!exports.some((entry) => entry.name === name && entry.kind === "function")) {
     throw new Error(`missing WebAssembly function export: ${name}`);
   }

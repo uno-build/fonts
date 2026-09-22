@@ -44,6 +44,7 @@ struct AtlasResultHandle {
 
 struct FontCharsetResultHandle {
     std::vector<uint32_t> codepoints;
+    std::vector<uint32_t> glyphIndices;
     std::string error;
 };
 
@@ -354,8 +355,10 @@ static void getFontCharset(FontCharsetResultHandle &result, const uint8_t *fontD
         FT_UInt glyphIndex = 0;
         FT_ULong codepoint = FT_Get_First_Char(face, &glyphIndex);
         while (glyphIndex) {
-            if (codepoint <= 0x10ffff && !(codepoint >= 0xd800 && codepoint <= 0xdfff))
+            if (codepoint <= 0x10ffff && !(codepoint >= 0xd800 && codepoint <= 0xdfff)) {
                 result.codepoints.push_back(uint32_t(codepoint));
+                result.glyphIndices.push_back(uint32_t(glyphIndex));
+            }
             codepoint = FT_Get_Next_Char(face, codepoint, &glyphIndex);
         }
         if (result.codepoints.empty()) throw std::runtime_error("font Unicode character map is empty");
@@ -401,6 +404,7 @@ MSDF_WASM_KEEPALIVE FontCharsetResultHandle *msdf_get_font_charset(const uint8_t
 }
 
 MSDF_WASM_KEEPALIVE const uint32_t *msdf_font_charset_data(const FontCharsetResultHandle *r) { return r && !r->codepoints.empty() ? r->codepoints.data() : nullptr; }
+MSDF_WASM_KEEPALIVE const uint32_t *msdf_font_charset_glyph_indices(const FontCharsetResultHandle *r) { return r && !r->glyphIndices.empty() ? r->glyphIndices.data() : nullptr; }
 MSDF_WASM_KEEPALIVE size_t msdf_font_charset_size(const FontCharsetResultHandle *r) { return r ? r->codepoints.size() : 0; }
 MSDF_WASM_KEEPALIVE const char *msdf_font_charset_error(const FontCharsetResultHandle *r) { return r && !r->error.empty() ? r->error.c_str() : nullptr; }
 MSDF_WASM_KEEPALIVE void msdf_destroy_font_charset_result(FontCharsetResultHandle *r) { delete r; }
