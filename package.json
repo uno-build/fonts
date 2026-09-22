@@ -23,8 +23,7 @@
     "test:cli": "node tests/check-cli.mjs && node tests/check-mtsdfx.mjs",
     "test:browser:prepare": "bash tests/run-browser-tests.sh",
     "test:browser": "npm run test:browser:prepare && node tests/run-browser-tests.mjs",
-    "reference:update": "node tests/reference/corpus.mjs",
-    "gen": "node cli/main.mjs -font /Users/enzo/projects/uno/ui/examples/assets/fonts/Supercell-Magic.ttf -imageout /Users/enzo/projects/uno/ui/examples/assets/fonts/Supercell-Magic.mtsdfx.png -json /Users/enzo/projects/uno/ui/examples/assets/fonts/Supercell-Magic.mtsdfx.json"
+    "reference:update": "node tests/reference/corpus.mjs"
   },
   "devDependencies": {
     "playwright": "1.63.0",

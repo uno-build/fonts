@@ -1,4 +1,4 @@
-# @uno/fonts
+<img src="./assets/banner.jpg" alt="uno/fonts" width="100%" />
 
 A WebAssembly (WASM) version of
 [msdf-atlas-gen](https://github.com/Chlumsky/msdf-atlas-gen). It runs the original C++
@@ -35,125 +35,31 @@ npx @uno/fonts \
 
 ## CLI options
 
-The options below have Node/WASM test coverage for the exercised fonts and
-combinations. The documented image and layout outputs have content checks;
-exporters checked only for file creation are omitted.
+| Option           | Values                                                                  | Description                                                                                                               |
+| ---------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `-font`          | Path to a `.ttf` or `.otf` file                                         | Input font; also accepted as the first positional argument. Required unless using `-varfont`.                             |
+| `-imageout`      | Output image path                                                       | Atlas image destination. Default: last input font path with its extension replaced by `.png`.                             |
+| `-json`          | Output `.json` path                                                     | Exports metrics, Unicode glyph layout, and kerning. Default: last input font path with its extension replaced by `.json`. |
+| `-chars`         | Code points, ranges, or quoted strings, e.g. `'[0x20, 0x7e], "áéíóúñ"'` | Characters to include. Default: printable ASCII (`U+0020`–`U+007E`).                                                      |
+| `-charset`       | Text file path                                                          | Reads Unicode character selection from a UTF-8 or ASCII file instead of inline `-chars`.                                  |
+| `-type`          | `mtsdfx`, `mtsdf`, `msdf`, `sdf`                                        | Atlas type. Default: `mtsdfx`, with separate RGB and alpha distance ranges.                                               |
+| `-size`          | Positive number                                                         | Glyph size in pixels per em. Default: `64`, unless `-minsize` is supplied.                                                |
+| `-pxrange`       | Positive number                                                         | Total symmetric distance range in pixels; RGB range for `mtsdfx`. Default: `16` (−8 to +8).                               |
+| `-effectpxrange` | Positive number ≥ `-pxrange`                                            | Alpha/effect range in pixels, only for `mtsdfx`. Default: `max(size / 2, pxrange)` (`32` with CLI defaults).              |
+| `-yorigin`       | `bottom`, `top`                                                         | Output Y-axis direction: upward (`bottom`, default) or downward (`top`).                                                  |
+| `-format`        | `png`, `binfloat`                                                       | Image encoding: 8-bit PNG or raw little-endian 32-bit floats. A `.png` path selects PNG; `mtsdfx` only supports PNG.      |
+| `-allglyphs`     | No value                                                                | Packs every glyph, including unmapped glyphs; JSON omits glyphs without Unicode mappings.                                 |
+| `-varfont`       | `"font.ttf?wdth=75&wght=700"`                                           | Input variable font with axis values. Quote the entire argument.                                                          |
+| `-minsize`       | Positive number                                                         | Minimum pixels per em; uses the largest size that fits the same atlas dimensions.                                         |
+| `-glyphs`        | Glyph indices or ranges, e.g. `'0, 1, [10, 20]'`                        | Selects font-specific glyph indices instead of Unicode characters.                                                        |
+| `-glyphset`      | Text file path                                                          | Reads glyph indices and ranges from a file instead of inline `-glyphs`.                                                   |
+| `-csv`           | Output `.csv` path                                                      | Exports glyph identifiers, advances, and bounds as an additional layout file.                                             |
+| `-fontname`      | Name                                                                    | Sets the font name in output metadata.                                                                                    |
+| `-and`           | No value                                                                | Starts another font input group in the same atlas; character selection carries forward.                                   |
+| `-printvaraxes`  | No value                                                                | Lists the input font's variation axes without creating default outputs.                                                   |
+| `-threads`       | Integer ≥ `0`                                                           | Accepted for compatibility; this WASM build always runs sequentially.                                                     |
 
-### Fonts and character selection
-
-| Option                                          | Description                                                                                                                                                       |
-| ----------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-font <file.ttf/otf>`                          | Input TrueType or OpenType font. A font input is required for generation.                                                                                         |
-| `-varfont <file.ttf/otf?axis=value&axis=value>` | Input variable font with axis coordinates, for example `"font.ttf?wdth=75&wght=700"`. Quote the entire argument to protect `?` and `&` from the shell.            |
-| `-printvaraxes`                                 | Lists the available variation axes. Can be used with a font input and no output files.                                                                            |
-| `-charset <file>`                               | Reads a set of Unicode characters from a UTF-8 or ASCII text file.                                                                                                |
-| `-chars <specification>`                        | Provides the character set inline, using the syntax below.                                                                                                        |
-| `-glyphset <file>`                              | Reads font-specific glyph indices from a text file.                                                                                                               |
-| `-glyphs <specification>`                       | Provides glyph indices inline.                                                                                                                                    |
-| `-allglyphs`                                    | Packs every glyph index in the font, including glyphs with no Unicode mapping. See the JSON behavior below.                                                       |
-| `-fontname <name>`                              | Sets a font name in output metadata.                                                                                                                              |
-| `-and`                                          | Starts another input group in the same atlas. Character selection carries forward unless changed. Specify a font and name for each group as in the example below. |
-
-Without a character or glyph selection, the default is printable ASCII
-(`U+0020`–`U+007E`). A later selection option replaces the previous selection
-within the current input group.
-
-Use decimal or hexadecimal code points (`65`, `0x41`), inclusive numeric
-ranges (`[0x20, 0x7e]`), or double-quoted strings (`"ABC café"`) to select
-characters. Separate entries with commas or whitespace. The input order
-does not determine atlas order. For example:
-
-```sh
-npx @uno/fonts \
-  -font font.ttf \
-  -chars '[0x20, 0x7e], "áéíóúñ"' -size 64 \
-  -imageout latin.png -json latin.json
-```
-
-Glyph sets use numeric values and ranges, for example `0,1,2,3,40,330`.
-
-To combine fonts:
-
-```sh
-npx @uno/fonts \
-  -font regular.ttf -fontname regular \
-  -chars '[0x20, 0x7e]' \
-  -and -font bold.ttf -fontname bold \
-  -size 64 -imageout family.png -json family.json
-```
-
-### Atlas types
-
-Select a type with `-type <type>`. The default is `mtsdfx`.
-
-| Type     | Distance channels | Description                                                                                                                  |
-| -------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `sdf`    | 1                 | True signed distance to the contour; suitable for smooth distance-based effects.                                             |
-| `msdf`   | RGB               | Multichannel signed distance field, preserving sharp corners when enlarged. Reconstruct the distance with the median of RGB. |
-| `mtsdf`  | RGBA              | MSDF in RGB plus a true SDF in alpha. All channels share one distance range.                                                 |
-| `mtsdfx` | RGBA              | Local CLI extension of MTSDF with separate RGB and alpha ranges. See [The `mtsdfx` type](#the-mtsdfx-type).                  |
-
-Distance-field channels store data: sample them as linear values, with no
-sRGB conversion. For MTSDF and MTSDFX, alpha is distance data rather than
-opacity, so preserve RGB without premultiplying it by alpha.
-
-### Image formats and outputs
-
-`-format <format>` selects the image encoding. Use a `.png` output filename
-for automatic PNG selection. For floating-point output, specify
-`-format binfloat` explicitly.
-
-| Format     | Description                                                                                         | Content checks                                                                                                         |
-| ---------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `png`      | Compressed 8-bit PNG. The only image format supported by `mtsdfx`.                                  | Selected tests compare decoded pixels and dimensions.                                                                  |
-| `binfloat` | Raw 32-bit floating-point values, little endian. Exercised with `mtsdf`; unavailable with `mtsdfx`. | The `mtsdfx` suite uses direct MTSDF float output as its reference and compares selected cases with the native engine. |
-
-When `-imageout` or `-json` is omitted, its path is derived independently from
-the font path by replacing the extension with `.png` or `.json`. This also
-supports `-varfont` (without the axis suffix); for multiple fonts, the last
-font path is used. Help, version, and variation-axis queries create no default
-outputs.
-
-| Option              | Description                                                                                                   |
-| ------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `-imageout <file>`  | Writes the atlas image. Layout information must be exported separately.                                       |
-| `-json <file.json>` | Writes atlas settings, font metrics, glyph layout, and kerning. Multiple inputs are grouped under `variants`. |
-| `-csv <file.csv>`   | Writes glyph identifiers, advances, plane bounds, and atlas bounds. Multiple inputs add a leading font index. |
-
-JSON tests check selected metadata and Unicode mappings. CSV content is
-compared with the direct MTSDF layout in the `mtsdfx` suite. These checks cover
-the tested combinations rather than every type/output pairing.
-
-In JSON, `atlas.size` is pixels per em; font metrics, glyph `advance`, kerning
-adjustments, and `planeBounds` use em units. `atlasBounds` uses atlas pixels.
-Glyphs without drawable geometry, such as spaces, can omit bounds.
-`-yorigin` controls the vertical coordinate convention.
-
-The Node CLI always exports Unicode identifiers in JSON, including when using
-`-glyphs`, `-glyphset`, or `-allglyphs`: it converts glyph indices through the
-font's character map, emits every Unicode alias with the same packed geometry,
-omits unmapped glyphs from JSON, and sorts by code point. Kerning pairs are
-converted too. This does not change which glyphs are packed into the image.
-CSV and the direct WASM CLI retain the upstream glyph-index behavior.
-
-### Glyph size, distance range, and coordinates
-
-An em is the font's design-space unit. At `-size 64`, one em maps to 64 atlas
-pixels. A symmetric range is its **total width**: `-pxrange 16` represents
-distances from `-8` outside to `+8` inside the contour. Larger ranges allow
-effects farther from the contour, but need more atlas space and reduce
-distance precision in 8-bit output.
-
-| Option                   | Description                                                                                                                                                     |
-| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `-size <size>`           | Fixes glyph size in pixels per em; positive real number. Default `64`, unless `-minsize` is supplied.                                                           |
-| `-pxrange <width>`       | Symmetric distance range in atlas pixels. Default `16` (RGB range in `mtsdfx`), unless another range option is supplied.                                        |
-| `-effectpxrange <width>` | Alpha/effect range in pixels, only with `mtsdfx`. Default `max(size / 2, pxrange)` (`32` with CLI defaults); must be positive, finite, and at least `-pxrange`. |
-| `-yorigin <origin>`      | Sets `bottom` (default, Y increases upward) or `top` (Y increases downward) for output coordinates.                                                             |
-| `-threads <N>`           | Accepts a thread count, but this WASM build always computes sequentially. Tests exercise values `1` and `8`.                                                    |
-
-Atlas dimensions are chosen automatically for the selected glyphs, size, and
-distance range. Both Y origins have output checks in the `mtsdfx` suite.
+For more details, see the [official msdf-atlas-gen repository](https://github.com/Chlumsky/msdf-atlas-gen).
 
 ## The `mtsdfx` type
 
