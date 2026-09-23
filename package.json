@@ -1,6 +1,7 @@
 {
   "name": "@uno/fonts",
   "version": "0.1.0",
+  "license": "MIT",
   "type": "module",
   "bin": {
     "main": "cli/main.mjs"
